@@ -5,7 +5,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { paymentService } from '../services/payment.service';
 import { PaymentRequest, PaymentMethod } from '../types/payment.types';
+import { PaymentProviderFactory } from '../services/provider.factory';
 import config from '../config/config';
+import { logger } from '../utils/logger';
+import { paymentRateLimiter } from '../middleware/rate-limiter';
 
 const router = express.Router();
 
@@ -26,14 +29,23 @@ function authenticateApiKey(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * Health check endpoint
+ * Health check endpoint with detailed diagnostics
  */
 router.get('/health', (req: Request, res: Response) => {
+  const supportedMethods = PaymentProviderFactory.getSupportedMethods();
+  
   res.json({
     success: true,
     message: 'GetPesa Payment System is running',
-    version: config.apiVersion,
+    version: '2.0.0',
     timestamp: new Date().toISOString(),
+    features: {
+      paymentProviders: supportedMethods,
+      authentication: ['API Key', 'JWT'],
+      database: 'SQLite',
+      rateLimiting: true,
+      structuredLogging: true,
+    },
   });
 });
 
@@ -41,10 +53,12 @@ router.get('/health', (req: Request, res: Response) => {
  * Initiate payment
  * POST /api/v1/payments/initiate
  */
-router.post('/payments/initiate', authenticateApiKey, async (req: Request, res: Response) => {
+router.post('/payments/initiate', authenticateApiKey, paymentRateLimiter, async (req: Request, res: Response) => {
   try {
     const { amount, currency, phoneNumber, method, description, metadata } = req.body;
     const userId = req.headers['x-user-id'] as string || 'default-user';
+
+    logger.info('Payment initiation request', { userId, amount, method });
 
     // Validate required fields
     if (!amount || !phoneNumber || !method) {

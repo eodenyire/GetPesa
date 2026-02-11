@@ -11,8 +11,8 @@ import {
   TransactionType,
   PaymentMethod,
 } from '../types/payment.types';
-import { transactionStore } from '../models/transaction.store';
-import { MPesaProvider } from './mpesa.provider';
+import { transactionRepository } from '../models/transaction.repository';
+import { PaymentProviderFactory } from './provider.factory';
 import {
   generateTransactionId,
   generateReference,
@@ -20,12 +20,11 @@ import {
   validatePhoneNumber,
 } from '../utils/helpers';
 import config from '../config/config';
+import { logger } from '../utils/logger';
 
 export class PaymentService {
-  private mpesaProvider: MPesaProvider;
-
   constructor() {
-    this.mpesaProvider = new MPesaProvider();
+    // Providers are now created by the factory as needed
   }
 
   /**
@@ -74,33 +73,31 @@ export class PaymentService {
       };
 
       // Save transaction
-      transactionStore.saveTransaction(transaction);
+      transactionRepository.saveTransaction(transaction);
 
-      // Initiate payment based on method
-      let response: PaymentResponse;
-      
-      switch (request.method) {
-        case PaymentMethod.MPESA:
-          response = await this.mpesaProvider.initiate(request);
-          break;
-        default:
-          response = {
-            success: false,
-            transactionId,
-            reference,
-            status: TransactionStatus.FAILED,
-            message: 'Payment method not supported',
-          };
+      // Validate payment method is supported
+      if (!PaymentProviderFactory.isSupported(request.method)) {
+        return {
+          success: false,
+          transactionId,
+          reference,
+          status: TransactionStatus.FAILED,
+          message: `Payment method ${request.method} not supported`,
+        };
       }
+
+      // Get the appropriate provider and initiate payment
+      const provider = PaymentProviderFactory.getProvider(request.method);
+      const response = await provider.initiate(request);
 
       // Update transaction with response
       if (response.success) {
-        transactionStore.updateTransaction(transactionId, {
+        transactionRepository.updateTransaction(transactionId, {
           status: response.status,
           reference: response.reference,
         });
       } else {
-        transactionStore.updateTransaction(transactionId, {
+        transactionRepository.updateTransaction(transactionId, {
           status: TransactionStatus.FAILED,
         });
       }
@@ -125,44 +122,44 @@ export class PaymentService {
    * Get transaction by ID
    */
   getTransaction(transactionId: string): Transaction | undefined {
-    return transactionStore.getTransaction(transactionId);
+    return transactionRepository.getTransaction(transactionId);
   }
 
   /**
    * Get user transactions
    */
   getUserTransactions(userId: string): Transaction[] {
-    return transactionStore.getUserTransactions(userId);
+    return transactionRepository.getUserTransactions(userId);
   }
 
   /**
    * Get wallet balance
    */
   getWalletBalance(userId: string, currency: string = 'KES') {
-    return transactionStore.getOrCreateWallet(userId, currency);
+    return transactionRepository.getOrCreateWallet(userId, currency);
   }
 
   /**
    * Complete a transaction (called after successful payment confirmation)
    */
   async completeTransaction(transactionId: string): Promise<Transaction | undefined> {
-    const transaction = transactionStore.getTransaction(transactionId);
+    const transaction = transactionRepository.getTransaction(transactionId);
     
     if (!transaction) {
       return undefined;
     }
 
     // Update transaction status
-    const updated = transactionStore.updateTransaction(transactionId, {
+    const updated = transactionRepository.updateTransaction(transactionId, {
       status: TransactionStatus.COMPLETED,
       completedAt: new Date(),
     });
 
     // Update wallet balance
     if (updated && updated.type === TransactionType.DEPOSIT) {
-      transactionStore.updateWalletBalance(updated.userId, updated.amount, updated.currency);
+      transactionRepository.updateWalletBalance(updated.userId, updated.amount, updated.currency);
     } else if (updated && updated.type === TransactionType.WITHDRAWAL) {
-      transactionStore.updateWalletBalance(updated.userId, -updated.amount, updated.currency);
+      transactionRepository.updateWalletBalance(updated.userId, -updated.amount, updated.currency);
     }
 
     return updated;
@@ -172,22 +169,21 @@ export class PaymentService {
    * Process webhook callback
    */
   async processCallback(method: PaymentMethod, data: any): Promise<Transaction> {
-    let transaction: Transaction;
-
-    switch (method) {
-      case PaymentMethod.MPESA:
-        transaction = await this.mpesaProvider.processCallback(data);
-        break;
-      default:
-        throw new Error('Unsupported payment method');
+    // Validate payment method is supported
+    if (!PaymentProviderFactory.isSupported(method)) {
+      throw new Error(`Unsupported payment method: ${method}`);
     }
 
+    // Get the appropriate provider and process callback
+    const provider = PaymentProviderFactory.getProvider(method);
+    const transaction = await provider.processCallback(data);
+
     // Save or update transaction
-    const existing = transactionStore.getTransaction(transaction.id);
+    const existing = transactionRepository.getTransaction(transaction.id);
     if (existing) {
-      transactionStore.updateTransaction(transaction.id, transaction);
+      transactionRepository.updateTransaction(transaction.id, transaction);
     } else {
-      transactionStore.saveTransaction(transaction);
+      transactionRepository.saveTransaction(transaction);
     }
 
     // Update wallet if completed
