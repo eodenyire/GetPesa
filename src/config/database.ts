@@ -7,6 +7,7 @@ import Database, { Database as DatabaseType } from 'better-sqlite3';
 import { logger } from '../utils/logger';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import config from './config';
 
 const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), 'data', 'getpesa.db');
 
@@ -16,9 +17,9 @@ if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
 }
 
-// Create database instance
+// Create database instance with conditional verbose logging
 export const db: DatabaseType = new Database(DB_PATH, {
-  verbose: (message) => logger.debug('SQLite:', message),
+  verbose: config.nodeEnv === 'development' ? (message) => logger.debug('SQLite:', message) : undefined,
 });
 
 // Enable foreign keys

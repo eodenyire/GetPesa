@@ -12,6 +12,7 @@ import {
   TransactionType,
 } from '../types/payment.types';
 import { generateTransactionId, generateReference } from '../utils/helpers';
+import { logger } from '../utils/logger';
 
 export class BankTransferProvider implements PaymentProvider {
   /**
@@ -74,9 +75,15 @@ export class BankTransferProvider implements PaymentProvider {
   async processCallback(data: any): Promise<Transaction> {
     console.log('Processing Bank Transfer callback:', data);
 
+    // Validate required data
+    if (!data.userId) {
+      logger.warn('Bank Transfer callback missing userId', { data });
+      throw new Error('Missing required field: userId');
+    }
+
     const transaction: Transaction = {
       id: data.transactionId || generateTransactionId(),
-      userId: data.userId || 'user-123',
+      userId: data.userId,
       amount: data.amount || 0,
       currency: data.currency || 'KES',
       type: TransactionType.PAYMENT,

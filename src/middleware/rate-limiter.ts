@@ -26,8 +26,14 @@ const paymentLimiter = new RateLimiterMemory({
  */
 export const apiRateLimiter = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const key = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-    await apiLimiter.consume(key as string);
+    // Extract the real client IP (handle proxy chains)
+    let key = req.ip || 'unknown';
+    if (req.headers['x-forwarded-for']) {
+      const forwarded = req.headers['x-forwarded-for'] as string;
+      key = forwarded.split(',')[0].trim();
+    }
+    
+    await apiLimiter.consume(key);
     next();
   } catch (error) {
     logger.warn('API rate limit exceeded', { ip: req.ip, path: req.path });
@@ -44,8 +50,14 @@ export const apiRateLimiter = async (req: Request, res: Response, next: NextFunc
  */
 export const paymentRateLimiter = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const key = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-    await paymentLimiter.consume(key as string);
+    // Extract the real client IP (handle proxy chains)
+    let key = req.ip || 'unknown';
+    if (req.headers['x-forwarded-for']) {
+      const forwarded = req.headers['x-forwarded-for'] as string;
+      key = forwarded.split(',')[0].trim();
+    }
+    
+    await paymentLimiter.consume(key);
     next();
   } catch (error) {
     logger.warn('Payment rate limit exceeded', { ip: req.ip, path: req.path });
@@ -65,8 +77,14 @@ export const createRateLimiter = (points: number, duration: number) => {
   
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const key = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-      await limiter.consume(key as string);
+      // Extract the real client IP (handle proxy chains)
+      let key = req.ip || 'unknown';
+      if (req.headers['x-forwarded-for']) {
+        const forwarded = req.headers['x-forwarded-for'] as string;
+        key = forwarded.split(',')[0].trim();
+      }
+      
+      await limiter.consume(key);
       next();
     } catch (error) {
       res.status(429).json({

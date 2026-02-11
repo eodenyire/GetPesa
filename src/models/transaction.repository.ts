@@ -215,6 +215,11 @@ export class TransactionRepository {
       const wallet = this.getOrCreateWallet(userId, currency);
       const newBalance = wallet.balance + amount;
       
+      // Prevent negative balances
+      if (newBalance < 0) {
+        throw new Error(`Insufficient balance. Current: ${wallet.balance}, Requested: ${Math.abs(amount)}`);
+      }
+      
       const stmt = db.prepare(`
         UPDATE wallets 
         SET balance = ?, updated_at = ?
@@ -223,6 +228,8 @@ export class TransactionRepository {
       
       const now = Date.now();
       stmt.run(newBalance, now, userId, currency);
+      
+      logger.info('Wallet balance updated', { userId, amount, newBalance, currency });
       
       return {
         ...wallet,

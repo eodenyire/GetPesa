@@ -12,6 +12,7 @@ import {
   TransactionType,
 } from '../types/payment.types';
 import { generateTransactionId, generateReference, formatPhoneNumber } from '../utils/helpers';
+import { logger } from '../utils/logger';
 import config from '../config/config';
 
 export class AirtelProvider implements PaymentProvider {
@@ -80,9 +81,15 @@ export class AirtelProvider implements PaymentProvider {
   async processCallback(data: any): Promise<Transaction> {
     console.log('Processing Airtel Money callback:', data);
 
+    // Validate required data
+    if (!data.userId) {
+      logger.warn('Airtel Money callback missing userId', { data });
+      throw new Error('Missing required field: userId');
+    }
+
     const transaction: Transaction = {
       id: data.transactionId || generateTransactionId(),
-      userId: data.userId || 'user-123',
+      userId: data.userId,
       amount: data.amount || 0,
       currency: data.currency || 'UGX',
       type: TransactionType.PAYMENT,
