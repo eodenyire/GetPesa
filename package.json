@@ -1,7 +1,7 @@
 {
   "name": "getpesa",
-  "version": "1.0.0",
-  "description": "East African mobile money payment gateway supporting M-Pesa and other payment methods",
+  "version": "2.0.0",
+  "description": "Production-grade East African mobile money payment gateway with multi-provider support, JWT auth, and SQLite database",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

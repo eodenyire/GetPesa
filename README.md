@@ -1,16 +1,25 @@
 # GetPesa
 
-**GetPesa** (Swahili for "Get Money") is a modern, developer-friendly payment gateway for East African mobile money services, with primary support for M-Pesa and extensibility for other payment providers.
+**GetPesa** (Swahili for "Get Money") is a production-grade payment gateway for East African mobile money services. Version 2.0 features multi-provider support, JWT authentication, rate limiting, and SQLite database persistence.
 
 ## 🚀 Features
 
-- **Mobile Money Integration**: M-Pesa STK Push support with easy extensibility for other providers
+### Core Features
+- **Multi-Provider Support**: M-Pesa, Airtel Money, and Bank Transfer integration
 - **RESTful API**: Clean, intuitive API for payment processing
-- **Transaction Management**: Complete transaction lifecycle handling
-- **Wallet System**: Built-in wallet management for users
+- **Transaction Management**: Complete transaction lifecycle handling with database persistence
+- **Wallet System**: Built-in wallet management with SQLite storage
 - **Type-Safe**: Built with TypeScript for enhanced developer experience
 - **Real-time Callbacks**: Webhook support for payment status updates
 - **East Africa Focused**: Optimized for KES, UGX, TZS, and other regional currencies
+
+### Security & Performance (v2.0)
+- **JWT Authentication**: Secure token-based user authentication
+- **Rate Limiting**: Protection against API abuse (100 req/min general, 10 req/min payments)
+- **API Key Auth**: Dual authentication support
+- **SQLite Database**: Persistent storage with indexed queries
+- **Structured Logging**: Winston-based logging with file rotation
+- **Graceful Shutdown**: Proper cleanup on termination
 
 ## 📋 Prerequisites
 
@@ -171,19 +180,25 @@ x-api-key: your-api-key
 
 ## 🔧 Configuration
 
-### Payment Methods
-Currently supported:
-- **MPESA**: Safaricom M-Pesa (Kenya)
+### Payment Methods (v2.0)
+**Currently Supported:**
+- **M-Pesa**: Safaricom M-Pesa (Kenya) - STK Push ready
+- **Airtel Money**: Airtel Money (Uganda, Tanzania, Kenya)
+- **Bank Transfer**: Direct bank transfers with reference tracking
 
-Easily extensible for:
-- Airtel Money
-- Bank transfers
-- Card payments
+**Coming Soon:**
+- Card payments (Visa, Mastercard)
+- PayPal integration
+- Cryptocurrency payments
 
 ### Transaction Limits
 Default limits (configurable in `src/config/config.ts`):
 - Minimum: KES 1
 - Maximum: KES 150,000
+
+### Rate Limiting
+- General API: 100 requests per minute
+- Payment endpoints: 10 requests per minute (stricter)
 
 ### Supported Currencies
 - KES (Kenyan Shilling)
@@ -208,26 +223,63 @@ npm run test:watch
 ```
 GetPesa/
 ├── src/
-│   ├── api/           # API routes and controllers
-│   ├── config/        # Configuration management
-│   ├── models/        # Data models and storage
-│   ├── services/      # Business logic and payment providers
-│   ├── types/         # TypeScript type definitions
-│   ├── utils/         # Utility functions
-│   └── index.ts       # Application entry point
-├── dist/              # Compiled JavaScript (generated)
-├── .env.example       # Environment variables template
-├── tsconfig.json      # TypeScript configuration
-└── package.json       # Project dependencies
+│   ├── __tests__/       # Test files
+│   ├── api/             # API routes and controllers
+│   ├── config/          # Configuration and database setup
+│   ├── middleware/      # Authentication and rate limiting
+│   ├── models/          # Data models and repositories
+│   ├── services/        # Business logic and payment providers
+│   ├── types/           # TypeScript type definitions
+│   ├── utils/           # Utility functions and logger
+│   └── index.ts         # Application entry point
+├── data/                # SQLite database (generated)
+├── logs/                # Log files (generated)
+├── dist/                # Compiled JavaScript (generated)
+├── .env.example         # Environment variables template
+├── tsconfig.json        # TypeScript configuration
+└── package.json         # Project dependencies
 ```
+
+## 🆕 What's New in v2.0
+
+### Multi-Provider Architecture
+- Factory pattern for payment provider management
+- Easy addition of new payment methods
+- Provider-specific configurations
+
+### Database Persistence
+- SQLite database with optimized indexes
+- Repository pattern for data access
+- Transaction and wallet persistence
+- User management for JWT auth
+
+### Enhanced Security
+- JWT token-based authentication
+- Bcrypt password hashing
+- Rate limiting per IP address
+- Request logging and monitoring
+
+### Monitoring & Observability
+- Structured logging with Winston
+- Rotating log files (error.log, combined.log)
+- Request/response logging
+- Graceful shutdown handling
 
 ## 🔐 Security
 
+### v1.0 Features
 - API key authentication for all requests
 - Input validation on all endpoints
 - Transaction verification
 - Secure webhook handling
 - Environment-based configuration
+
+### v2.0 Enhancements ✨
+- **JWT Authentication**: Secure token-based user auth
+- **Rate Limiting**: Prevents API abuse and DDoS attacks
+- **Password Hashing**: Bcrypt with salt rounds
+- **SQL Injection Prevention**: Prepared statements
+- **Structured Logging**: Audit trail for all operations
 
 **Important**: Never commit your `.env` file or expose API credentials.
 
