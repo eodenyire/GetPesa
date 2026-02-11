@@ -1,0 +1,53 @@
+{
+  "name": "getpesa",
+  "version": "1.0.0",
+  "description": "East African mobile money payment gateway supporting M-Pesa and other payment methods",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "echo 'No linter configured yet'",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eodenyire/GetPesa.git"
+  },
+  "keywords": [
+    "payment",
+    "mpesa",
+    "mobile-money",
+    "payment-gateway",
+    "kenya",
+    "east-africa",
+    "fintech"
+  ],
+  "author": "GetPesa Contributors",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/eodenyire/GetPesa/issues"
+  },
+  "homepage": "https://github.com/eodenyire/GetPesa#readme",
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "@types/uuid": "^10.0.0",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "ts-jest": "^29.4.6"
+  }
+}
